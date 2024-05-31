@@ -90,22 +90,22 @@ func main() {
 	r.GET("/findbyrange/:coordinates/:range", func(ctx *gin.Context) {
 		user_coordinates := ctx.Param("coordinates")
 		rng := ctx.Param("range")
-		frng,_ := strconv.ParseFloat(rng,64) 
-		lat,long,_ := get_coordinates(user_coordinates)
+		frng, _ := strconv.ParseFloat(rng, 64)
+		lat, long, _ := get_coordinates(user_coordinates)
 		var locations []glocation
 
 		if err := db.Find(&locations).Error; err != nil {
 			log.Fatal(err)
 		}
-		filtered_list := []glocation{} 
+		filtered_list := []glocation{}
 		for _, loc := range locations {
-			distance := getDistance(Coordinates{Latitude: lat,Longitude:long},Coordinates{Latitude: loc.Latitude,Longitude: loc.Longitude})
-			
+			distance := getDistance(Coordinates{Latitude: lat, Longitude: long}, Coordinates{Latitude: loc.Latitude, Longitude: loc.Longitude})
+
 			if distance <= frng {
 				filtered_list = append(filtered_list, loc)
 			}
 		}
-		ctx.JSON(200,filtered_list)
+		ctx.JSON(200, filtered_list)
 	})
 	r.Run()
 }
