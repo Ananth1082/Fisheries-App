@@ -29,12 +29,12 @@ func toRadians(degree float64) float64 {
 }
 
 func getDistance(point1 Coordinates, point2 Coordinates) float64 {
-	return math.Acos(math.Sin(toRadians(point1.Latitude))*math.Sin(toRadians(point2.Latitude)) +
+	return math.Acos(math.Sin(toRadians(point1.Latitude))*math.Sin(toRadians(point2.Latitude))+
 		math.Cos(toRadians(point1.Latitude))*math.Cos(toRadians(point2.Latitude))*
 			math.Cos(toRadians(point2.Longitude)-toRadians(point1.Longitude))) * 6371
 }
 
-func getCoordinates(coordinate string) (float64, float64, error) {
+func get_coordinates(coordinate string) (float64, float64, error) {
 	coordinate, err := url.QueryUnescape(coordinate)
 	if err != nil {
 		return 0, 0, fmt.Errorf("error decoding coordinates: %w", err)
@@ -60,31 +60,24 @@ func main() {
 	if err != nil {
 		log.Fatal("failed to connect database", err)
 	}
-	var locations []glocation
-
-	if err := db.Find(&locations).Error; err != nil {
-		log.Fatal(err)
-	}
-	for _, loc := range locations {
-		fmt.Printf("Name: %s, Coordinates: (%f, %f)\n", loc.Name, loc.Latitude, loc.Longitude)
-	}
-	distance := getDistance(Coordinates{Latitude: locations[0].Latitude, Longitude: locations[0].Longitude},
-		Coordinates{Latitude: locations[1].Latitude, Longitude: locations[1].Longitude})
-	fmt.Println("distance: ", distance)
 
 	r := gin.Default()
 	r.GET("/locations", func(ctx *gin.Context) {
+		var locations []glocation
+		if err := db.Find(&locations).Error; err != nil {
+			log.Fatal(err)
+		}
 		ctx.JSON(200, locations)
 	})
 	r.GET("/distancebetween/:coordinates1/:coordinates2", func(ctx *gin.Context) {
 		coordinates1 := ctx.Param("coordinates1")
 		coordinates2 := ctx.Param("coordinates2")
-		lat1, long1, err := getCoordinates(coordinates1)
+		lat1, long1, err := get_coordinates(coordinates1)
 		if err != nil {
 			ctx.JSON(400, gin.H{"error": err.Error()})
 			return
 		}
-		lat2, long2, err := getCoordinates(coordinates2)
+		lat2, long2, err := get_coordinates(coordinates2)
 		if err != nil {
 			ctx.JSON(400, gin.H{"error": err.Error()})
 			return
@@ -93,6 +86,26 @@ func main() {
 		point2 := Coordinates{Latitude: lat2, Longitude: long2}
 		distance := getDistance(point1, point2)
 		ctx.JSON(200, gin.H{"distance": distance})
+	})
+	r.GET("/findbyrange/:coordinates/:range", func(ctx *gin.Context) {
+		user_coordinates := ctx.Param("coordinates")
+		rng := ctx.Param("range")
+		frng,_ := strconv.ParseFloat(rng,64) 
+		lat,long,_ := get_coordinates(user_coordinates)
+		var locations []glocation
+
+		if err := db.Find(&locations).Error; err != nil {
+			log.Fatal(err)
+		}
+		filtered_list := []glocation{} 
+		for _, loc := range locations {
+			distance := getDistance(Coordinates{Latitude: lat,Longitude:long},Coordinates{Latitude: loc.Latitude,Longitude: loc.Longitude})
+			
+			if distance <= frng {
+				filtered_list = append(filtered_list, loc)
+			}
+		}
+		ctx.JSON(200,filtered_list)
 	})
 	r.Run()
 }
