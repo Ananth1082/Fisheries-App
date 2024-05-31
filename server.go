@@ -13,7 +13,7 @@ import (
 	"gorm.io/gorm"
 )
 
-type GLocation struct {
+type Glocation struct {
 	Name      string  `gorm:"column:name"`
 	Longitude float64 `gorm:"column:longitude"`
 	Latitude  float64 `gorm:"column:latitude"`
@@ -29,7 +29,7 @@ func toRadians(degree float64) float64 {
 }
 
 func getDistance(point1, point2 Coordinates) float64 {
-	return math.Acos(math.Sin(toRadians(point1.Latitude))*math.Sin(toRadians(point2.Latitude)) +
+	return math.Acos(math.Sin(toRadians(point1.Latitude))*math.Sin(toRadians(point2.Latitude))+
 		math.Cos(toRadians(point1.Latitude))*math.Cos(toRadians(point2.Latitude))*
 			math.Cos(toRadians(point2.Longitude)-toRadians(point1.Longitude))) * 6371
 }
@@ -64,7 +64,7 @@ func main() {
 	r := gin.Default()
 
 	r.GET("/locations", func(ctx *gin.Context) {
-		var locations []GLocation
+		var locations []Glocation
 		if err := db.Find(&locations).Error; err != nil {
 			log.Println("Error fetching locations:", err)
 			ctx.JSON(500, gin.H{"error": "Error fetching locations"})
@@ -111,14 +111,14 @@ func main() {
 			return
 		}
 
-		var locations []GLocation
+		var locations []Glocation
 		if err := db.Find(&locations).Error; err != nil {
 			log.Println("Error fetching locations:", err)
 			ctx.JSON(500, gin.H{"error": "Error fetching locations"})
 			return
 		}
 
-		var filteredList []GLocation
+		var filteredList []Glocation
 		for _, loc := range locations {
 			distance := getDistance(Coordinates{Latitude: lat, Longitude: long}, Coordinates{Latitude: loc.Latitude, Longitude: loc.Longitude})
 			if distance <= frng {
