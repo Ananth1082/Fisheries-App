@@ -55,7 +55,7 @@ func parseCoordinates(coordinate string) (float64, float64, error) {
 }
 
 func main() {
-	dsn := "postgresql://ananth:b9BTvlD_4VeqvxpqzbneMw@poster-app-4864.7s5.aws-ap-south-1.cockroachlabs.cloud:26257/defaultdb?sslmode=verify-full"
+	dsn := ""
 	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	if err != nil {
 		log.Fatal("failed to connect database:", err)
